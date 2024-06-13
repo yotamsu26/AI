@@ -1,9 +1,12 @@
 import numpy as np
 import abc
 import util
+from enum import Enum
 from game import Agent, Action
 
-
+class AgentEnum(Enum):
+    OUR_AGENT = 0
+    OPPONENT = 1
 class ReflexAgent(Agent):
     """
     A reflex agent chooses an action at each choice point by examining
@@ -50,10 +53,16 @@ class ReflexAgent(Agent):
         successor_game_state = current_game_state.generate_successor(action=action)
         board = successor_game_state.board
         max_tile = successor_game_state.max_tile
-        score = successor_game_state.score
-
-        "*** YOUR CODE HERE ***"
+        score = 0
+        
+        # give weight to the max_tile, to the number of empty tiles and to the position of the tiles
+        # the heuristics is based on the fact that the max_tile should be in the corner of the board
+        for row in range(len(board)):
+            for col in range(len(board[row])):
+                score += board[row][col] * (row + len(board) * col) + max_tile*successor_game_state.get_empty_tiles()[0].size
+        
         return score
+        
 
 
 def score_evaluation_function(current_game_state):
@@ -110,10 +119,41 @@ class MinmaxAgent(MultiAgentSearchAgent):
             Returns the successor game state after an agent takes an action
         """
         """*** YOUR CODE HERE ***"""
-        util.raiseNotDefined()
+        legal_moves = game_state.get_agent_legal_actions()
+        
+        scores = [self.min_value(game_state, action) for action in legal_moves]
+        best_score = max(scores)
+        best_indices = [index for index in range(len(scores)) if scores[index] == best_score]
+        chosen_index = np.random.choice(best_indices)  # Pick randomly among the best
 
+        "Add more of your code here if you want to"
 
-
+        return legal_moves[chosen_index]
+    
+    def min_value(self, game_state, action, depth=0):
+        if depth == self.depth:
+            return self.evaluation_function(game_state)
+        
+        successor = game_state.generate_successor(AgentEnum.OUR_AGENT.value, action)
+        legal_moves = successor.get_opponent_legal_actions()
+        
+        if not legal_moves:
+            return self.evaluation_function(successor)
+        
+        return min([self.max_value(successor, action, depth+1) for action in legal_moves])
+    
+    def max_value(self, game_state, action, depth=0):
+        if depth == self.depth:
+            return self.evaluation_function(game_state)
+        
+        successor = game_state.generate_successor(AgentEnum.OPPONENT.value, action)
+        legal_moves = successor.get_agent_legal_actions()
+        
+        if not legal_moves:
+            return self.evaluation_function(successor)
+        
+        return max([self.min_value(successor, action, depth+1) for action in legal_moves])
+    
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
     Your minimax agent with alpha-beta pruning (question 3)
@@ -124,10 +164,54 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         """*** YOUR CODE HERE ***"""
-        util.raiseNotDefined()
+        legal_moves = game_state.get_agent_legal_actions()
+        
+        scores = [self.min_value(game_state, action) for action in legal_moves]
+        best_score = max(scores)
+        best_indices = [index for index in range(len(scores)) if scores[index] == best_score]
+        chosen_index = np.random.choice(best_indices)  # Pick randomly among the best
 
+        "Add more of your code here if you want to"
 
-
+        return legal_moves[chosen_index]
+    
+    def min_value(self, game_state, action, alpha=float("-inf"), beta=float("inf"),  depth=0):
+        if depth == self.depth:
+            return self.evaluation_function(game_state)
+        
+        successor = game_state.generate_successor(AgentEnum.OUR_AGENT.value, action)
+        legal_moves = successor.get_opponent_legal_actions()
+        
+        if not legal_moves:
+            return self.evaluation_function(successor)
+        
+        v = float('inf')
+        for action in legal_moves:
+            v = min(v, self.max_value(successor, action, alpha, beta, depth+1))
+            if v <= alpha:
+                return v
+            beta = min(beta, v)
+            
+        return v
+    
+    def max_value(self, game_state, action, alpha=float("-inf"), beta=float("inf"), depth=0):
+        if depth == self.depth:
+            return self.evaluation_function(game_state)
+        
+        successor = game_state.generate_successor(AgentEnum.OPPONENT.value, action)
+        legal_moves = successor.get_agent_legal_actions()
+        
+        if not legal_moves:
+            return self.evaluation_function(successor)
+        
+        v = float('-inf')
+        for action in legal_moves:
+            v = max(v, self.min_value(successor, action, alpha, beta, depth+1))
+            if v >= beta:
+                return v
+            alpha = max(alpha, v)
+        
+        return v
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
     Your expectimax agent (question 4)
