@@ -121,7 +121,7 @@ class MinmaxAgent(MultiAgentSearchAgent):
         """*** YOUR CODE HERE ***"""
         legal_moves = game_state.get_agent_legal_actions()
         
-        scores = [self.min_value(game_state, action) for action in legal_moves]
+        scores = [self.min_value(game_state.generate_successor(AgentEnum.OUR_AGENT.value, action)) for action in legal_moves]
         best_score = max(scores)
         best_indices = [index for index in range(len(scores)) if scores[index] == best_score]
         chosen_index = np.random.choice(best_indices)  # Pick randomly among the best
@@ -130,29 +130,27 @@ class MinmaxAgent(MultiAgentSearchAgent):
 
         return legal_moves[chosen_index]
     
-    def min_value(self, game_state, action, depth=0):
+    def min_value(self, game_state, depth=0):
         if depth == self.depth:
             return self.evaluation_function(game_state)
         
-        successor = game_state.generate_successor(AgentEnum.OUR_AGENT.value, action)
-        legal_moves = successor.get_opponent_legal_actions()
+        legal_moves = game_state.get_opponent_legal_actions()
         
         if not legal_moves:
-            return self.evaluation_function(successor)
+            return self.evaluation_function(game_state)
         
-        return min([self.max_value(successor, action, depth+1) for action in legal_moves])
+        return min([self.max_value(game_state.generate_successor(AgentEnum.OPPONENT.value, action), depth+1) for action in legal_moves])
     
-    def max_value(self, game_state, action, depth=0):
+    def max_value(self, game_state, depth=0):
         if depth == self.depth:
             return self.evaluation_function(game_state)
         
-        successor = game_state.generate_successor(AgentEnum.OPPONENT.value, action)
-        legal_moves = successor.get_agent_legal_actions()
+        legal_moves = game_state.get_agent_legal_actions()
         
         if not legal_moves:
-            return self.evaluation_function(successor)
+            return self.evaluation_function(game_state)
         
-        return max([self.min_value(successor, action, depth+1) for action in legal_moves])
+        return max([self.min_value(game_state.generate_successor(AgentEnum.OUR_AGENT.value, action), depth+1) for action in legal_moves])
     
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
@@ -166,7 +164,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """*** YOUR CODE HERE ***"""
         legal_moves = game_state.get_agent_legal_actions()
         
-        scores = [self.min_value(game_state, action) for action in legal_moves]
+        scores = [self.min_value(game_state.generate_successor(AgentEnum.OUR_AGENT.value, action)) for action in legal_moves]
         best_score = max(scores)
         best_indices = [index for index in range(len(scores)) if scores[index] == best_score]
         chosen_index = np.random.choice(best_indices)  # Pick randomly among the best
@@ -175,38 +173,36 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
 
         return legal_moves[chosen_index]
     
-    def min_value(self, game_state, action, alpha=float("-inf"), beta=float("inf"),  depth=0):
+    def min_value(self, game_state, alpha=float("-inf"), beta=float("inf"),  depth=0):
         if depth == self.depth:
             return self.evaluation_function(game_state)
         
-        successor = game_state.generate_successor(AgentEnum.OUR_AGENT.value, action)
-        legal_moves = successor.get_opponent_legal_actions()
+        legal_moves = game_state.get_opponent_legal_actions()
         
         if not legal_moves:
-            return self.evaluation_function(successor)
+            return self.evaluation_function(game_state)
         
         v = float('inf')
         for action in legal_moves:
-            v = min(v, self.max_value(successor, action, alpha, beta, depth+1))
+            v = min(v, self.max_value(game_state.generate_successor(AgentEnum.OPPONENT.value, action), alpha, beta, depth+1))
             if v <= alpha:
                 return v
             beta = min(beta, v)
             
         return v
     
-    def max_value(self, game_state, action, alpha=float("-inf"), beta=float("inf"), depth=0):
+    def max_value(self, game_state, alpha=float("-inf"), beta=float("inf"), depth=0):
         if depth == self.depth:
             return self.evaluation_function(game_state)
         
-        successor = game_state.generate_successor(AgentEnum.OPPONENT.value, action)
-        legal_moves = successor.get_agent_legal_actions()
+        legal_moves = game_state.get_agent_legal_actions()
         
         if not legal_moves:
-            return self.evaluation_function(successor)
+            return self.evaluation_function(game_state)
         
         v = float('-inf')
         for action in legal_moves:
-            v = max(v, self.min_value(successor, action, alpha, beta, depth+1))
+            v = max(v, self.min_value(game_state.generate_successor(AgentEnum.OUR_AGENT.value, action), alpha, beta, depth+1))
             if v >= beta:
                 return v
             alpha = max(alpha, v)
@@ -225,7 +221,46 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         """*** YOUR CODE HERE ***"""
-        util.raiseNotDefined()
+        legal_moves = game_state.get_agent_legal_actions()
+        
+        scores = [self.exp_value(game_state.generate_successor(AgentEnum.OUR_AGENT.value, action)) for action in legal_moves]
+        best_score = max(scores)
+        best_indices = [index for index in range(len(scores)) if scores[index] == best_score]
+        chosen_index = np.random.choice(best_indices)  # Pick randomly among the best
+
+        "Add more of your code here if you want to"
+
+        return legal_moves[chosen_index]
+    
+    def exp_value(self, game_state, depth=0):
+        res_expectation = 0
+        
+        if depth == self.depth:
+            return self.evaluation_function(game_state)
+        
+        legal_moves = game_state.get_opponent_legal_actions()
+        
+        if not legal_moves:
+            return self.evaluation_function(game_state)
+        
+        probability = 1 / len(legal_moves)
+        results = [self.max_value(game_state.generate_successor(AgentEnum.OPPONENT.value, action), depth+1) for action in legal_moves]
+        
+        for res in results:
+            res_expectation += res * probability
+        
+        return res_expectation
+    
+    def max_value(self, game_state, depth=0):
+        if depth == self.depth:
+            return self.evaluation_function(game_state)
+        
+        legal_moves = game_state.get_agent_legal_actions()
+        
+        if not legal_moves:
+            return self.evaluation_function(game_state)
+        
+        return max([self.exp_value(game_state.generate_successor(AgentEnum.OUR_AGENT.value, action), depth+1) for action in legal_moves])
 
 
 
