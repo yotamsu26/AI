@@ -118,15 +118,12 @@ class MinmaxAgent(MultiAgentSearchAgent):
         game_state.generate_successor(agent_index, action):
             Returns the successor game state after an agent takes an action
         """
-        """*** YOUR CODE HERE ***"""
         legal_moves = game_state.get_agent_legal_actions()
         
         scores = [self.min_value(game_state.generate_successor(AgentEnum.OUR_AGENT.value, action)) for action in legal_moves]
         best_score = max(scores)
         best_indices = [index for index in range(len(scores)) if scores[index] == best_score]
         chosen_index = np.random.choice(best_indices)  # Pick randomly among the best
-
-        "Add more of your code here if you want to"
 
         return legal_moves[chosen_index]
     
@@ -138,7 +135,8 @@ class MinmaxAgent(MultiAgentSearchAgent):
         
         if not legal_moves:
             return self.evaluation_function(game_state)
-        
+        # Min player increases depth - one ply is the Agent turn and then the board turn
+        # so after the board turn update depth
         return min([self.max_value(game_state.generate_successor(AgentEnum.OPPONENT.value, action), depth+1) for action in legal_moves])
     
     def max_value(self, game_state, depth=0):
@@ -149,9 +147,12 @@ class MinmaxAgent(MultiAgentSearchAgent):
         
         if not legal_moves:
             return self.evaluation_function(game_state)
-        
-        return max([self.min_value(game_state.generate_successor(AgentEnum.OUR_AGENT.value, action), depth+1) for action in legal_moves])
-    
+
+        # Max player doesnt increases depth - one ply is the Agent turn and then the board turn
+        # so after the agent turn dont update depth
+        return max([self.min_value(game_state.generate_successor(AgentEnum.OUR_AGENT.value, action), depth) for action in legal_moves])
+
+
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
     Your minimax agent with alpha-beta pruning (question 3)
@@ -161,15 +162,12 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         Returns the minimax action using self.depth and self.evaluationFunction
         """
-        """*** YOUR CODE HERE ***"""
         legal_moves = game_state.get_agent_legal_actions()
         
         scores = [self.min_value(game_state.generate_successor(AgentEnum.OUR_AGENT.value, action)) for action in legal_moves]
         best_score = max(scores)
         best_indices = [index for index in range(len(scores)) if scores[index] == best_score]
         chosen_index = np.random.choice(best_indices)  # Pick randomly among the best
-
-        "Add more of your code here if you want to"
 
         return legal_moves[chosen_index]
     
@@ -184,6 +182,8 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         
         v = float('inf')
         for action in legal_moves:
+            # Min player increases depth - one ply is the Agent turn and then the board turn
+            # so after the board turn update depth
             v = min(v, self.max_value(game_state.generate_successor(AgentEnum.OPPONENT.value, action), alpha, beta, depth+1))
             if v <= alpha:
                 return v
@@ -202,12 +202,16 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         
         v = float('-inf')
         for action in legal_moves:
-            v = max(v, self.min_value(game_state.generate_successor(AgentEnum.OUR_AGENT.value, action), alpha, beta, depth+1))
+            # Max player doesnt increases depth - one ply is the Agent turn and then the board turn
+            # so after the agent turn dont update depth
+            v = max(v, self.min_value(game_state.generate_successor(AgentEnum.OUR_AGENT.value, action), alpha, beta, depth))
             if v >= beta:
                 return v
             alpha = max(alpha, v)
         
         return v
+
+
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
     Your expectimax agent (question 4)
@@ -220,15 +224,12 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         The opponent should be modeled as choosing uniformly at random from their
         legal moves.
         """
-        """*** YOUR CODE HERE ***"""
         legal_moves = game_state.get_agent_legal_actions()
         
         scores = [self.exp_value(game_state.generate_successor(AgentEnum.OUR_AGENT.value, action)) for action in legal_moves]
         best_score = max(scores)
         best_indices = [index for index in range(len(scores)) if scores[index] == best_score]
         chosen_index = np.random.choice(best_indices)  # Pick randomly among the best
-
-        "Add more of your code here if you want to"
 
         return legal_moves[chosen_index]
     
@@ -242,8 +243,11 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         
         if not legal_moves:
             return self.evaluation_function(game_state)
-        
+
+        # Uniform distribution
         probability = 1 / len(legal_moves)
+        # Min player increases depth - one ply is the Agent turn and then the board turn
+        # so after the board turn update depth
         results = [self.max_value(game_state.generate_successor(AgentEnum.OPPONENT.value, action), depth+1) for action in legal_moves]
         
         for res in results:
@@ -259,11 +263,9 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         
         if not legal_moves:
             return self.evaluation_function(game_state)
-        
-        return max([self.exp_value(game_state.generate_successor(AgentEnum.OUR_AGENT.value, action), depth+1) for action in legal_moves])
-
-
-
+        # Max player doesnt increases depth - one ply is the Agent turn and then the board turn
+        # so after the agent turn dont update depth
+        return max([self.exp_value(game_state.generate_successor(AgentEnum.OUR_AGENT.value, action), depth) for action in legal_moves])
 
 
 def better_evaluation_function(current_game_state):
@@ -272,8 +274,122 @@ def better_evaluation_function(current_game_state):
 
     DESCRIPTION: <write something here so we know what you did>
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    board = current_game_state.board
+
+    max_tile_score = current_game_state.max_tile
+    monotonicity_score = monotonicity(board)
+    empty_tiles_score = np.sum(board == 0)
+    merging_potential_score = merging_potential(board)
+    smoothness_score = smoothness(board)
+    tile_alignment_score = tile_alignment(board)
+    corner_bias_score = corner_bias(board)
+
+    heuristic_score = (monotonicity_score * 1.0 +
+                       empty_tiles_score * (max_tile_score / 2) +
+                       merging_potential_score * 1.5 +
+                       max_tile_score * 1.0 +
+                       smoothness_score * 0.5 +
+                       tile_alignment_score * 1.0 +
+                       corner_bias_score * 2.0)
+
+    return heuristic_score
+
+
+def monotonicity(board):
+    """
+    Check Monotonicity in the cols and rows, for each row and each cols, if it is monotonic (increasing or decreasing)
+    than add the sum of the tiles in that row/col.
+    return the sum of all the monotonic rows and cols.
+    """
+    scores = []
+    # Check rows
+    for row in board:
+        increasing = all(row[i] <= row[i + 1] for i in range(len(row) - 1))
+        decreasing = all(row[i] >= row[i + 1] for i in range(len(row) - 1))
+        if increasing or decreasing:
+            scores.append(np.sum(row))
+        else:
+            scores.append(0)
+
+    # Check columns
+    for col in board.T:
+        increasing = all(col[i] <= col[i + 1] for i in range(len(col) - 1))
+        decreasing = all(col[i] >= col[i + 1] for i in range(len(col) - 1))
+        if increasing or decreasing:
+            scores.append(np.sum(col))
+        else:
+            scores.append(0)
+
+    return np.sum(scores)
+
+
+def merging_potential(board):
+    """
+    For each 2 blocks that could be merged together add the sum of those 2 tiles. (for example if there is 2 128 tiles
+    that are neighbors then add 2*128 to the potential.
+    """
+    potential = 0
+    for i in range(len(board)):
+        for j in range(len(board[0])):
+            if board[i][j] != 0:
+                if i < len(board)-1 and board[i][j] == board[i+1][j]:
+                    potential += board[i][j] * 2
+                if j < len(board[0])-1 and board[i][j] == board[i][j+1]:
+                    potential += board[i][j] * 2
+    return potential
+
+
+def smoothness(board):
+    """
+    calculate the diff between each tiles and its 2 neighbors - we need that diff to be as minimal as possible.
+    (similar reason as monotonicity)
+    this score decrese the value of the node as higher diffs are not good (near 512 should be 256 and not 2)
+    """
+    smoothness_score = 0
+    for i in range(len(board)):
+        for j in range(len(board[0])):
+            if board[i][j] != 0:
+                if i < len(board)-1:
+                    smoothness_score -= abs(board[i][j] - board[i+1][j])
+                if j < len(board[0])-1:
+                    smoothness_score -= abs(board[i][j] - board[i][j+1])
+    return smoothness_score
+
+
+def tile_alignment(board):
+    """
+    enforce "snake" positionig on the board
+    """
+    weights = np.array([
+        [16, 15, 14, 13],
+        [9, 10, 11, 12],
+        [8, 7, 6, 5],
+        [1, 2, 3, 4]
+    ])
+    return np.sum(board * weights)
+
+
+def corner_bias(board):
+    """
+    Add a bias that the max tile would be in the 0,0 corner
+    """
+    max_tile = np.max(board)
+    if board[0, 0] == max_tile:
+        return 1000
+    else:
+        return 0
+
+
+# def get_rotations(mat):
+#     """
+#     Get all 4 rotations of the boards - it doesnt matter which is the corner you are playing relative to
+#     so try on all 4 variations of the board.
+#     """
+#     rotations = [mat]
+#     rotations.append(np.rot90(mat, k=3))  # 90 degrees clockwise
+#     rotations.append(np.rot90(mat, k=2))  # 180 degrees clockwise
+#     rotations.append(np.rot90(mat, k=1))  # 270 degrees clockwise
+#     return rotations
 
 
 # Abbreviation
