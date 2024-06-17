@@ -272,18 +272,32 @@ def better_evaluation_function(current_game_state):
     """
     Your extreme 2048 evaluation function (question 5).
 
-    DESCRIPTION: <write something here so we know what you did>
+    DESCRIPTION: This heuristic function is a linear combination of a few aspect, all of them
+    are fulfilling the idea of the strategy that keeps the board as much closer to a "snake" like shape, where the
+    highest number is at the corner and then slowly decreasing in a shape that seems like snake:
+    - max tile score
+    - number of empty tiles
+    - merging potential - how much tiles can be merged
+    - smoothness of the neighbors values
+    - monotonicity in the rows and cols
+    - tile alignment to a shape of "snake" matrix
+    - corner bias (max tile on the corner)
+
+    we also tried to compute the heuristic on all 4 rotations of the board as it doesnt matter that we
+    chose the top left corner as our reference corner, but it really slowed down and didnt improved a lot the results
+
     """
     board = current_game_state.board
+    if not current_game_state.get_agent_legal_actions():
+        return float("-inf")
 
     max_tile_score = current_game_state.max_tile
-    monotonicity_score = monotonicity(board)
     empty_tiles_score = np.sum(board == 0)
     merging_potential_score = merging_potential(board)
     smoothness_score = smoothness(board)
+    monotonicity_score = monotonicity(board)
     tile_alignment_score = tile_alignment(board)
     corner_bias_score = corner_bias(board)
-
     heuristic_score = (monotonicity_score * 1.0 +
                        empty_tiles_score * (max_tile_score / 2) +
                        merging_potential_score * 1.5 +
@@ -291,31 +305,33 @@ def better_evaluation_function(current_game_state):
                        smoothness_score * 0.5 +
                        tile_alignment_score * 1.0 +
                        corner_bias_score * 2.0)
-
     return heuristic_score
 
 
 def monotonicity(board):
     """
     Check Monotonicity in the cols and rows, for each row and each cols, if it is monotonic (increasing or decreasing)
-    than add the sum of the tiles in that row/col.
+    than add the sum of the tiles in that row/col - we want to enforce the "snake" positioning so
+    the first and third row should be decreasing and the second and forth rows should be increasing.
+    all the cols need to be decreasing
     return the sum of all the monotonic rows and cols.
     """
     scores = []
     # Check rows
-    for row in board:
-        increasing = all(row[i] <= row[i + 1] for i in range(len(row) - 1))
-        decreasing = all(row[i] >= row[i + 1] for i in range(len(row) - 1))
-        if increasing or decreasing:
+    for index, row in enumerate(board):
+        if index in [0, 2]:
+            cond = all(row[i] >= row[i + 1] for i in range(len(row) - 1))
+        else:
+            cond = all(row[i] <= row[i + 1] for i in range(len(row) - 1))
+        if cond:
             scores.append(np.sum(row))
         else:
             scores.append(0)
 
     # Check columns
     for col in board.T:
-        increasing = all(col[i] <= col[i + 1] for i in range(len(col) - 1))
         decreasing = all(col[i] >= col[i + 1] for i in range(len(col) - 1))
-        if increasing or decreasing:
+        if decreasing:
             scores.append(np.sum(col))
         else:
             scores.append(0)
@@ -343,7 +359,7 @@ def smoothness(board):
     """
     calculate the diff between each tiles and its 2 neighbors - we need that diff to be as minimal as possible.
     (similar reason as monotonicity)
-    this score decrese the value of the node as higher diffs are not good (near 512 should be 256 and not 2)
+    this score decrease the value of the node as higher diffs are not good (near 512 should be 256 and not 2)
     """
     smoothness_score = 0
     for i in range(len(board)):
@@ -358,7 +374,7 @@ def smoothness(board):
 
 def tile_alignment(board):
     """
-    enforce "snake" positionig on the board
+    enforce "snake" positioning on the board
     """
     weights = np.array([
         [16, 15, 14, 13],
