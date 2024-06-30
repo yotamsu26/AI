@@ -30,8 +30,8 @@ import tkinter.messagebox
 import weakref
 
 from tkinter import ttk
-import game2048_grid as GG
-from game import Action
+import ex3.game2048_grid as GG
+from ex3.game import Action
 
 
 class GameScore(ttk.Frame):

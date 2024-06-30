@@ -35,7 +35,7 @@ import tkinter as TK
 
 from tkinter import ttk
 
-import game_grid as GG
+import ex3.game_grid as GG
 
 
 class Game2048Grid(GG.GameGrid):

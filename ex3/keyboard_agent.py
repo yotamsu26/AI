@@ -6,7 +6,7 @@
 # John DeNero (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
 # For more info, see http://inst.eecs.berkeley.edu/~cs188/sp09/pacman.html
 
-from game import Agent, Action
+from ex3.game import Agent, Action
 
 
 class KeyboardAgent(Agent):

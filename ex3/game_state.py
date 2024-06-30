@@ -2,7 +2,7 @@ import copy
 
 import numpy as np
 
-from game import Action, OpponentAction
+from ex3.game import Action, OpponentAction
 
 DEFAULT_BOARD_SIZE = 4
 

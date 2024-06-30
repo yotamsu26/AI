@@ -1,8 +1,8 @@
 import numpy as np
 import abc
-import util
+import ex3.util as util
 from enum import Enum
-from game import Agent, Action
+from ex3.game import Agent, Action
 
 class AgentEnum(Enum):
     OUR_AGENT = 0

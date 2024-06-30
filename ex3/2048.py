@@ -1,11 +1,11 @@
 import argparse
 import numpy
 import os
-import util
-from game import Game, RandomOpponentAgent
-from game_state import GameState
-from graphics_display import GabrieleCirulli2048GraphicsDisplay
-from keyboard_agent import KeyboardAgent
+import ex3.util as util
+from ex3.game import Game, RandomOpponentAgent
+from ex3.game_state import GameState
+from ex3.graphics_display import GabrieleCirulli2048GraphicsDisplay
+from ex3.keyboard_agent import KeyboardAgent
 
 NUM_OF_INITIAL_TILES = 2
 
@@ -45,7 +45,7 @@ class GameRunner(object):
 
 def create_agent(args):
     if args.agent == 'ReflexAgent':
-        from multi_agents import ReflexAgent
+        from ex3.multi_agents import ReflexAgent
         agent = ReflexAgent()
     else:
         agent = util.lookup('multi_agents.' + args.agent, globals())(depth=args.depth,
