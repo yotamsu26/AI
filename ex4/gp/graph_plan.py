@@ -220,39 +220,44 @@ class GraphPlan(object):
                 return False
         return True
 
+
 def inconsistent_effects(a1, a2):
     """
     Returns:
         true if a1 and a2 have inconsistent effects
     """
-    a1_add = a1.get_add();
-    a2_add = a2.get_add();
-    a1_delete = a1.get_delete();
-    a2_delete = a2.get_delete();
+    a1_add = a1.get_add()
+    a2_add = a2.get_add()
+    a1_delete = a1.get_delete()
+    a2_delete = a2.get_delete()
     
-    for action1 in a1_add:
-        if action1 in a2_delete:
+    for prop1 in a1_add:
+        if prop1 in a2_delete:
             return True
     
-    for action2 in a2_add:
-        if action2 in a1_delete:
+    for prop2 in a2_add:
+        if prop2 in a1_delete:
             return True
-        
+    return False
+
+
 def interference(a1, a2):
     """
     Returns:
-        true if a1 and a2 have inconsistent effects
+        true if a1 and a2 interfere with each other
     """
-    a1_pre = a1.get_pre();
-    a2_pre = a2.get_pre();
+    a1_pre = a1.get_pre()
+    a2_pre = a2.get_pre()
     
-    for action1 in a1_pre:
-        if a2.is_neg_effect(action1):
+    for prop1 in a1_pre:
+        if a2.is_neg_effect(prop1):
             return True
     
-    for action2 in a2_pre:
-        if a1.is_neg_effect(action2):
+    for prop2 in a2_pre:
+        if a1.is_neg_effect(prop2):
             return True
+    return False
+
 
 def independent_pair(a1, a2):
     """
@@ -266,9 +271,7 @@ def independent_pair(a1, a2):
     a1.is_pos_effect(p) returns true is p is in a1.get_add()
     a1.is_neg_effect(p) returns true is p is in a1.get_delete()
     """
-    "*** YOUR CODE HERE ***"
-    
-    return not inconsistent_effects(a1, a2) and not interference(a1, a2);
+    return not inconsistent_effects(a1, a2) and not interference(a1, a2)
 
 
 if __name__ == '__main__':

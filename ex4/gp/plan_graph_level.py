@@ -58,7 +58,18 @@ class PlanGraphLevel(object):
         self.actionLayer.addAction(action) adds action to the current action layer
         """
         all_actions = PlanGraphLevel.actions
-        "*** YOUR CODE HERE ***"
+        for action in all_actions:
+            if not previous_proposition_layer.all_preconds_in_layer(action):
+                continue
+
+            pairwise_mutex = False
+            pre_conditions = action.get_pre()
+            for i in range(len(pre_conditions)):
+                for j in range(i+1, len(pre_conditions)):
+                    if previous_proposition_layer.is_mutex(pre_conditions[i], pre_conditions[j]):
+                        pairwise_mutex = True
+            if not pairwise_mutex:
+                self.action_layer.add_action(action)
 
     def update_mutex_actions(self, previous_layer_mutex_proposition):
         """
@@ -71,7 +82,11 @@ class PlanGraphLevel(object):
         Note that an action is *not* mutex with itself
         """
         current_layer_actions = self.action_layer.get_actions()
-        "*** YOUR CODE HERE ***"
+        current_layer_actions = list(current_layer_actions)
+        for i in range(len(current_layer_actions)):
+            for j in range(i+1, len(current_layer_actions)):
+                if mutex_actions(current_layer_actions[i], current_layer_actions[j], previous_layer_mutex_proposition):
+                    self.action_layer.add_mutex_actions(current_layer_actions[i], current_layer_actions[j])
 
     def update_proposition_layer(self):
         """
@@ -88,7 +103,18 @@ class PlanGraphLevel(object):
 
         """
         current_layer_actions = self.action_layer.get_actions()
-        "*** YOUR CODE HERE ***"
+        prop_to_producers = dict()
+
+        for action in current_layer_actions:
+            for prop in action.get_add():
+                if prop not in prop_to_producers:
+                    prop_to_producers[prop] = []
+                prop_to_producers[prop].append(action)
+
+        for prop, producers in prop_to_producers.items():
+            new_prop = Proposition(prop.get_name())
+            new_prop.set_producers(producers)
+            self.proposition_layer.add_proposition(new_prop)
 
     def update_mutex_proposition(self):
         """
@@ -100,8 +126,13 @@ class PlanGraphLevel(object):
         to the mutex set of the current layer
         """
         current_layer_propositions = self.proposition_layer.get_propositions()
+        current_layer_propositions = list(current_layer_propositions)
         current_layer_mutex_actions = self.action_layer.get_mutex_actions()
-        "*** YOUR CODE HERE ***"
+        for i in range(len(current_layer_propositions)):
+            for j in range(i+1,len(current_layer_propositions)):
+                if mutex_propositions(current_layer_propositions[i], current_layer_propositions[j],
+                                      current_layer_mutex_actions):
+                    self.proposition_layer.add_mutex_prop(current_layer_propositions[i], current_layer_propositions[j])
 
     def expand(self, previous_layer):
         """
@@ -114,8 +145,10 @@ class PlanGraphLevel(object):
         """
         previous_proposition_layer = previous_layer.get_proposition_layer()
         previous_layer_mutex_proposition = previous_proposition_layer.get_mutex_props()
-
-        "*** YOUR CODE HERE ***"
+        self.update_action_layer(previous_proposition_layer)
+        self.update_mutex_actions(previous_layer_mutex_proposition)
+        self.update_proposition_layer()
+        self.update_mutex_proposition()
 
     def expand_without_mutex(self, previous_layer):
         """
@@ -145,16 +178,15 @@ def have_competing_needs(a1, a2, mutex_props):
     Hint: for propositions p  and q, the command  "Pair(p, q) in mutex_props"
           returns true if p and q are mutex in the previous level
     """
-    "*** YOUR CODE HERE ***"
-    a1_pre = a1.get_pre();
-    a2_pre = a2.get_pre();
+    a1_pre = a1.get_pre()
+    a2_pre = a2.get_pre()
     
     for p in a1_pre:
         for q in a2_pre:
             if Pair(p, q) in mutex_props:
                 return True
-    
     return False
+
 
 def mutex_propositions(prop1, prop2, mutex_actions_list):
     """
@@ -164,12 +196,10 @@ def mutex_propositions(prop1, prop2, mutex_actions_list):
     You might want to use this function:
     prop1.get_producers() returns the set of all the possible actions in the layer that have prop1 on their add list
     """
-    "*** YOUR CODE HERE ***"
-    producers1 = prop1.get_producers();
-    producers2 = prop2.get_producers();
-    for p1 in producers1:
-        for p2 in producers2:
-            if Pair(p1, p2) in mutex_actions_list:
-                return True
-            
-    return False
+    producers1 = prop1.get_producers()
+    producers2 = prop2.get_producers()
+    for a1 in producers1:
+        for a2 in producers2:
+            if Pair(a1, a2) not in mutex_actions_list:
+                return False
+    return True
