@@ -131,8 +131,8 @@ if __name__ == '__main__':
     n = int(float(sys.argv[1]))  # number of disks
     m = int(float(sys.argv[2]))  # number of pegs
 
-    domain_file_name = 'hanoi_%s_%s_domain1.txt' % (n, m)
-    problem_file_name = 'hanoi_%s_%s_problem1.txt' % (n, m)
+    domain_file_name = 'hanoi_%s_%s_domain.txt' % (n, m)
+    problem_file_name = 'hanoi_%s_%s_problem.txt' % (n, m)
 
     create_domain_file(domain_file_name, n, m)
     create_problem_file(problem_file_name, n, m)
